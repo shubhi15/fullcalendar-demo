@@ -1,0 +1,26 @@
+.legend {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 8px;
+    width: 200px;
+    font-size: 14px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.legend-icon {
+    font-size: 16px;
+    margin-right: 8px;
+}
