@@ -3,8 +3,7 @@ import { people } from "./constants";
 export const generateEvents = (eventCount: number) => {
     const events = [];
     const startDate = new Date(2025, 1, 1);
-    const endDate = new Date(2025, 5, 28);
-    
+    const endDate = new Date(2025, 2, 28);
 
     for (let i = 0; i < eventCount; i++) {
         const personIndex = i % people.length;
@@ -29,12 +28,22 @@ export const generateEvents = (eventCount: number) => {
             end: end,
             title: `Event ${i + 1}`,
             backgroundColor: person.color, // Assign background color from person
-            personId: person.name,
+            resourceId: person.name,
             type: eventType,
             customAttr: 'New Attr'
         });
     }
     return events;
 };
+
+export const getResources = ()=> {
+    return people.map((person)=> {
+         return {
+            id: person.name,
+            title: person.name,
+            eventColor: person.color 
+         }
+     })
+ }
 
 

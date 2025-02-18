@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   EventApi,
   DateSelectArg,
@@ -14,10 +14,12 @@ import { createEventId } from "./event-utils";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { people } from "./constants";
-import { generateEvents } from "./utils";
+import { generateEvents, getResources } from "./utils";
 import Legend from "./Legend/Legend";
 import EventCount from "./EventCount/EventCount";
 import TimelineView from "./ResourceTimeline";
+import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
+import adaptivePlugin from "@fullcalendar/adaptive";
 
 const SchedulerComponent: React.FC = () => {
   const [weekendsVisible, setWeekendsVisible] = useState(true);
@@ -27,20 +29,34 @@ const SchedulerComponent: React.FC = () => {
   const [eventCount, setEventCount] = useState(100);
   const [events, setEvents] = useState<any[]>(generateEvents(100));
 
+  const calendar = useRef(null);
+
   const [visiblePeople, setVisiblePeople] = useState<string[]>(
     people.map((p) => p.name)
   );
 
+  const [selectedDate, setSelectedDate] = useState(new Date()); // State for selected date
+
+  // Function to handle date change from React Calendar
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    const calendarApi = calendar.current.getApi();
+    calendarApi.gotoDate(date); // Navigate to selected date
+  };
+
   useEffect(() => {
     // Simulate real-time updates every 10 seconds
     const interval = setInterval(() => {
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // Add 1 hour
       const newEvent = {
         id: String(new Date().getTime()),
         title: "New Event at " + new Date().toLocaleTimeString(),
-        start: new Date().toISOString().split("T")[0], // Today
-        end: new Date().toISOString().split("T")[0], // Today
+        start: now, // Today
+        end: oneHourLater, // Today
+        allDay: false,
       };
-      
+
       // Append new event to current events
       setEvents((prevEvents) => [...prevEvents, newEvent]);
     }, 10000);
@@ -51,7 +67,7 @@ const SchedulerComponent: React.FC = () => {
   useEffect(() => {
     const events = generateEvents(eventCount);
     const datasrc = events?.filter((event) =>
-      visiblePeople.includes(event.personId)
+      visiblePeople.includes(event.resourceId)
     );
     measureRenderTime(() => setEvents(datasrc), "On filtering");
   }, [visiblePeople]);
@@ -78,6 +94,7 @@ const SchedulerComponent: React.FC = () => {
         start: selectInfo.startStr,
         end: selectInfo.endStr,
         allDay: selectInfo.allDay,
+        resourceId: people[0].name,
       });
     }
     setCreateDialogOpen(true);
@@ -113,7 +130,7 @@ const SchedulerComponent: React.FC = () => {
         <div className="w-1/4 p-4 bg-white shadow-md">
           <h2 className="text-xl font-bold mb-4">Select a Date</h2>
           <Calendar
-            onChange={setDate}
+            onChange={handleDateChange}
             value={date}
             className="rounded-lg shadow-sm p-2"
           />
@@ -168,11 +185,27 @@ const SchedulerComponent: React.FC = () => {
 
       <div className="demo-app-main">
         <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          ref={calendar}
+          initialDate={selectedDate}
+          schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+          // plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          // headerToolbar={{
+          //   left: "prev,next today",
+          //   center: "title",
+          //   right: "dayGridMonth,timeGridWeek,timeGridDay",
+          // }}
+          plugins={[
+            adaptivePlugin,
+            dayGridPlugin,
+            timeGridPlugin,
+            interactionPlugin,
+            resourceTimelinePlugin,
+          ]}
           headerToolbar={{
             left: "prev,next today",
             center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
+            right:
+              "dayGridMonth,timeGridWeek,timeGridDay,resourceTimelineDay,dayGridYear",
           }}
           initialView="dayGridMonth"
           editable={true}
@@ -182,20 +215,31 @@ const SchedulerComponent: React.FC = () => {
             dayGridMonth: { dayMaxEventRows: 1 }, // Limit month view
             dayGridWeek: { dayMaxEventRows: 1 }, // Limit week view
             timeGridDay: { dayMaxEventRows: 1 }, // Limit day view
+            dayGridYear: { dayMaxEventRows: 1 }, // Limit year view
+          }}
+          buttonText={{
+            today: "Current Day", // Rename "Today" button
+            prev: "Back", // Rename "Prev" button
+            next: "Forward", // Rename "Next" button
+            resourceTimelineDay: "Timeline View",
+            timeGridDay: "Day",
+            timeGridWeek: "Week",
+            dayGridMonth: "Month",
+           
           }}
           weekends={weekendsVisible}
           events={events}
           select={handleDateSelect}
           eventContent={renderEventContent} // custom render function
           eventClick={handleEventClick}
-          dayMaxEvents={1} // Limit events in month view
+          dayMaxEvents={true} // Limit events in month view
           /* you can update a remote database when these fire:
           eventAdd={function(){}}
           eventChange={function(){}}
           eventRemove={function(){}}
           */
+          resources={getResources()}
         />
-        <TimelineView />
       </div>
     </div>
   );
